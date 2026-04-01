@@ -254,6 +254,15 @@ const useFinancasStore = create(
       updateSimulador: (dados) =>
         set((s) => ({ simulador: { ...s.simulador, ...dados } })),
 
+      // ─── BENS ────────────────────────────────────────────────────
+      bens: [],
+      addBem: (bem) =>
+        set((s) => ({ bens: [...(s.bens||[]), { ...bem, id: Date.now() }] })),
+      updateBem: (id, dados) =>
+        set((s) => ({ bens: (s.bens||[]).map((b) => (b.id === id ? { ...b, ...dados } : b)) })),
+      removeBem: (id) =>
+        set((s) => ({ bens: (s.bens||[]).filter((b) => b.id !== id) })),
+
       // ─── MARCOS EDITÁVEIS ────────────────────────────────────────
       marcos: [
         { id: 1, valor: 1000000,  label: 'R$1M',  emoji: '🥇' },

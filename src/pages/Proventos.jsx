@@ -4,7 +4,6 @@ import useFinancasStore from '../store'
 const fmt  = (v) => new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' }).format(v||0)
 const fmtK = (v) => new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL', maximumFractionDigits:0 }).format(v||0)
 
-// Cálculo automático de IR e Petros
 function calcSalario(sal) {
   const brutos = ['salarioBasico','rmnr','anuenio','gratFuncaoGer','heDesembarque','auxilioEducacional']
   const totalBruto = brutos.reduce((a,k)=>a+(sal[k]||0),0)
@@ -15,19 +14,19 @@ function calcSalario(sal) {
 }
 
 const CAMPOS_BRUTO = [
-  { key:'salarioBasico',      label:'Salário Básico',      info:'Base do cargo efetivo' },
-  { key:'rmnr',               label:'RMNR',                info:'Remuneração Mínima do Nível de Referência' },
-  { key:'anuenio',            label:'Anuênio',             info:'Adicional por tempo de serviço (1% ao ano)' },
-  { key:'gratFuncaoGer',      label:'Grat. Função Ger.',   info:'Gratificação pela função gerencial' },
-  { key:'heDesembarque',      label:'HE Desembarque',      info:'Horas extras de desembarque — regime 14x14' },
-  { key:'auxilioEducacional', label:'Auxílio Educacional', info:'Benefício para dependentes' },
+  { key:'salarioBasico',      label:'Salário Básico' },
+  { key:'rmnr',               label:'RMNR' },
+  { key:'anuenio',            label:'Anuênio' },
+  { key:'gratFuncaoGer',      label:'Grat. Função Ger.' },
+  { key:'heDesembarque',      label:'HE Desembarque' },
+  { key:'auxilioEducacional', label:'Auxílio Educacional' },
 ]
 const CAMPOS_DESC_MANUAL = [
-  { key:'inss', label:'INSS',  info:'Contribuição previdenciária INSS' },
-  { key:'ams',  label:'AMS',   info:'Assistência Médica Suplementar' },
+  { key:'inss', label:'INSS' },
+  { key:'ams',  label:'AMS' },
 ]
 
-function CampoEditavel({ label, value, color, info, onChange }) {
+function CampoEditavel({ label, value, color, onChange }) {
   const [editing, setEditing] = useState(false)
   const [local, setLocal] = useState('')
   const start = () => { setLocal(String(value)); setEditing(true) }
@@ -51,121 +50,114 @@ function CampoEditavel({ label, value, color, info, onChange }) {
   )
 }
 
-function SalarioCard({ salario, onUpdate, titulo, defaultOpen }) {
-  const [open, setOpen] = useState(defaultOpen !== false)
-  const { totalBruto, petros, ir, totalDesc, liquido } = calcSalario(salario)
-  const efetividade = totalBruto > 0 ? ((liquido/totalBruto)*100).toFixed(1) : 0
-
+function SalarioDetalhe({ sal, onUpdate }) {
+  const { totalBruto, petros, ir, totalDesc, liquido } = calcSalario(sal)
   return (
-    <div style={{ background:'linear-gradient(135deg,#111827,#0d1422)', border:'1px solid rgba(110,231,183,0.18)', borderRadius:'20px', overflow:'hidden', marginBottom:'12px', boxShadow:'0 4px 24px rgba(0,0,0,0.3)' }}>
-      <button onClick={()=>setOpen(!open)} style={{ width:'100%', background:'none', border:'none', cursor:'pointer', padding:'18px 20px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:'12px', textAlign:'left' }}>
-          <div style={{ width:'44px', height:'44px', background:'linear-gradient(135deg,#6ee7b7,#3b82f6)', borderRadius:'12px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'20px', flexShrink:0, boxShadow:'0 4px 14px rgba(110,231,183,0.35)' }}>💼</div>
-          <div>
-            <p style={{ fontSize:'15px', fontWeight:700, color:'#e2e8f0' }}>{titulo || 'Salário — Petrobras'}</p>
-            <p style={{ fontSize:'11px', color:'rgba(226,232,240,0.4)', marginTop:'2px' }}>Efetividade {efetividade}% · {open?'▲':'▼'}</p>
-          </div>
-        </div>
-        <div style={{ textAlign:'right' }}>
-          <p style={{ fontSize:'20px', fontWeight:800, color:'#6ee7b7', fontFamily:"'JetBrains Mono',monospace" }}>{fmtK(liquido)}</p>
-          <p style={{ fontSize:'10px', color:'rgba(226,232,240,0.35)' }}>Líquido</p>
-        </div>
-      </button>
+    <div style={{ paddingTop:'12px' }}>
+      <p style={{ fontSize:'10px', color:'#6ee7b7', letterSpacing:'0.1em', textTransform:'uppercase', fontWeight:700, marginBottom:'4px' }}>▸ Proventos Brutos</p>
+      {CAMPOS_BRUTO.map(c => (
+        <CampoEditavel key={c.key} label={c.label} value={sal[c.key]||0} color="#6ee7b7" onChange={v=>onUpdate(c.key, v)} />
+      ))}
+      <div style={{ display:'flex', justifyContent:'space-between', padding:'8px 0' }}>
+        <span style={{ fontSize:'13px', fontWeight:700, color:'rgba(226,232,240,0.7)' }}>Total Bruto</span>
+        <span style={{ fontSize:'14px', fontWeight:800, color:'#6ee7b7', fontFamily:"'JetBrains Mono',monospace" }}>{fmt(totalBruto)}</span>
+      </div>
 
-      {open && (
-        <div style={{ padding:'0 20px 20px', borderTop:'1px solid rgba(255,255,255,0.05)', animation:'scaleIn 0.2s ease both' }}>
-          {/* Proventos brutos */}
-          <div style={{ marginTop:'16px' }}>
-            <p style={{ fontSize:'10px', color:'#6ee7b7', letterSpacing:'0.1em', textTransform:'uppercase', fontWeight:700, marginBottom:'4px' }}>▸ Proventos Brutos</p>
-            {CAMPOS_BRUTO.map(c => (
-              <CampoEditavel key={c.key} label={c.label} value={salario[c.key]||0} info={c.info} color="#6ee7b7" onChange={v=>onUpdate(c.key,v)} />
-            ))}
-            <div style={{ display:'flex', justifyContent:'space-between', padding:'10px 0 0' }}>
-              <span style={{ fontSize:'13px', fontWeight:700, color:'#e2e8f0' }}>Total Bruto</span>
-              <span style={{ fontSize:'15px', fontWeight:800, color:'#6ee7b7', fontFamily:"'JetBrains Mono',monospace" }}>{fmt(totalBruto)}</span>
-            </div>
-          </div>
+      <p style={{ fontSize:'10px', color:'#f87171', letterSpacing:'0.1em', textTransform:'uppercase', fontWeight:700, marginBottom:'4px', marginTop:'8px' }}>▸ Descontos Manuais</p>
+      {CAMPOS_DESC_MANUAL.map(c => (
+        <CampoEditavel key={c.key} label={c.label} value={sal[c.key]||0} color="#f87171" onChange={v=>onUpdate(c.key, v)} />
+      ))}
 
-          {/* Descontos manuais */}
-          <div style={{ marginTop:'20px' }}>
-            <p style={{ fontSize:'10px', color:'#f87171', letterSpacing:'0.1em', textTransform:'uppercase', fontWeight:700, marginBottom:'4px' }}>▸ Descontos Manuais</p>
-            {CAMPOS_DESC_MANUAL.map(c => (
-              <CampoEditavel key={c.key} label={c.label} value={salario[c.key]||0} info={c.info} color="#f87171" onChange={v=>onUpdate(c.key,v)} />
-            ))}
-          </div>
-
-          {/* Descontos automáticos */}
-          <div style={{ marginTop:'16px', background:'rgba(248,113,113,0.05)', border:'1px solid rgba(248,113,113,0.12)', borderRadius:'12px', padding:'12px' }}>
-            <p style={{ fontSize:'10px', color:'#f87171', letterSpacing:'0.1em', textTransform:'uppercase', fontWeight:700, marginBottom:'8px' }}>▸ Descontos Automáticos</p>
-            {[
-              { label:'Petros (9% do bruto)', value: petros, info:'= Bruto × 9%' },
-              { label:'IR (27,5% − R$908,73)', value: ir, info:'= (Bruto − INSS − Petros) × 27,5% − 908,73' },
-            ].map(d => (
-              <div key={d.label} style={{ display:'flex', justifyContent:'space-between', padding:'6px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
-                <div>
-                  <span style={{ fontSize:'13px', color:'rgba(226,232,240,0.55)' }}>{d.label}</span>
-                  <p style={{ fontSize:'10px', color:'rgba(226,232,240,0.25)', marginTop:'1px' }}>{d.info}</p>
-                </div>
-                <span style={{ fontSize:'13px', fontWeight:600, color:'#f87171', fontFamily:"'JetBrains Mono',monospace" }}>{fmt(d.value)}</span>
-              </div>
-            ))}
-            <div style={{ display:'flex', justifyContent:'space-between', paddingTop:'8px' }}>
-              <span style={{ fontSize:'12px', fontWeight:700, color:'rgba(226,232,240,0.5)' }}>Total Descontos</span>
-              <span style={{ fontSize:'14px', fontWeight:800, color:'#f87171', fontFamily:"'JetBrains Mono',monospace" }}>{fmt(totalDesc)}</span>
-            </div>
-          </div>
-
-          {/* Líquido */}
-          <div style={{ marginTop:'14px', background:'linear-gradient(135deg,rgba(110,231,183,0.1),rgba(59,130,246,0.08))', border:'1px solid rgba(110,231,183,0.2)', borderRadius:'14px', padding:'16px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+      <div style={{ marginTop:'10px', background:'rgba(248,113,113,0.05)', border:'1px solid rgba(248,113,113,0.12)', borderRadius:'10px', padding:'10px 12px' }}>
+        <p style={{ fontSize:'10px', color:'#f87171', letterSpacing:'0.1em', textTransform:'uppercase', fontWeight:700, marginBottom:'6px' }}>▸ Descontos Automáticos</p>
+        {[
+          { label:'Petros (9% do bruto)', value:petros, info:'Bruto × 9%' },
+          { label:'IR (27,5% − R$908,73)', value:ir, info:'(Bruto − INSS − Petros) × 27,5% − 908,73' },
+        ].map(d => (
+          <div key={d.label} style={{ display:'flex', justifyContent:'space-between', padding:'5px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
             <div>
-              <p style={{ fontSize:'14px', fontWeight:700, color:'#e2e8f0' }}>💰 Salário Líquido</p>
-              <p style={{ fontSize:'11px', color:'rgba(226,232,240,0.4)', marginTop:'2px' }}>{fmt(totalDesc)} descontados ({((totalDesc/totalBruto)*100).toFixed(1)}%)</p>
+              <span style={{ fontSize:'12px', color:'rgba(226,232,240,0.5)' }}>{d.label}</span>
+              <p style={{ fontSize:'9px', color:'rgba(226,232,240,0.25)' }}>{d.info}</p>
             </div>
-            <p style={{ fontSize:'24px', fontWeight:800, color:'#6ee7b7', fontFamily:"'JetBrains Mono',monospace" }}>{fmt(liquido)}</p>
+            <span style={{ fontSize:'12px', fontWeight:600, color:'#f87171', fontFamily:"'JetBrains Mono',monospace" }}>{fmt(d.value)}</span>
           </div>
+        ))}
+        <div style={{ display:'flex', justifyContent:'space-between', paddingTop:'7px' }}>
+          <span style={{ fontSize:'12px', fontWeight:700, color:'rgba(226,232,240,0.5)' }}>Total Descontos</span>
+          <span style={{ fontSize:'13px', fontWeight:800, color:'#f87171', fontFamily:"'JetBrains Mono',monospace" }}>{fmt(totalDesc)}</span>
         </div>
-      )}
+      </div>
+
+      <div style={{ marginTop:'12px', background:'linear-gradient(135deg,rgba(110,231,183,0.1),rgba(59,130,246,0.06))', border:'1px solid rgba(110,231,183,0.2)', borderRadius:'12px', padding:'14px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+        <div>
+          <p style={{ fontSize:'13px', fontWeight:700, color:'#e2e8f0' }}>Líquido</p>
+          <p style={{ fontSize:'10px', color:'rgba(226,232,240,0.4)', marginTop:'2px' }}>{((totalDesc/totalBruto)*100).toFixed(1)}% descontado</p>
+        </div>
+        <p style={{ fontSize:'22px', fontWeight:800, color:'#6ee7b7', fontFamily:"'JetBrains Mono',monospace" }}>{fmt(liquido)}</p>
+      </div>
     </div>
   )
 }
 
-function OutraRendaSimples({ renda, onUpdate, onRemove, onAddDespesa, onRemoveDespesa }) {
+// Card genérico para qualquer fonte de renda
+function RendaCard({ renda, onUpdate, onRemove, onAddDespesa, onRemoveDespesa }) {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState(false)
   const [local, setLocal] = useState({ ...renda })
   const [addingDesp, setAddingDesp] = useState(false)
   const [novaDesp, setNovaDesp] = useState({ nome:'', valor:'' })
 
-  const totalDesp = (renda.despesas||[]).reduce((a,d)=>a+d.valor,0)
-  const liquido   = renda.valor - totalDesp
+  const isSal = renda.tipo === 'salario'
+  const sal   = renda.salario || {}
 
-  const catColors = { Aluguel:'#6ee7b7', Investimentos:'#818cf8', Freelance:'#fbbf24', Dividendos:'#34d399', Outros:'#94a3b8' }
+  const { liquido: salLiq, totalBruto } = isSal ? calcSalario(sal) : {}
+  const totalDesp = !isSal ? (renda.despesas||[]).reduce((a,d)=>a+d.valor,0) : 0
+  const liquido   = isSal ? salLiq : renda.valor - totalDesp
+
+  const catColors = { Aluguel:'#6ee7b7', Investimentos:'#818cf8', Freelance:'#fbbf24', Dividendos:'#34d399', Salário:'#60a5fa', Outros:'#94a3b8' }
   const cor = catColors[renda.categoria] || '#6ee7b7'
 
-  const save = () => { onUpdate(renda.id, { ...local, valor:parseFloat(local.valor)||0 }); setEditing(false) }
+  const updateSalCampo = (campo, valor) => {
+    onUpdate(renda.id, { salario: { ...sal, [campo]: parseFloat(valor)||0 } })
+  }
+
+  const save = () => {
+    onUpdate(renda.id, { ...local, valor: parseFloat(local.valor)||0 })
+    setEditing(false)
+  }
 
   return (
-    <div style={{ background:'linear-gradient(135deg,#111827,#0d1422)', border:`1px solid ${cor}18`, borderRadius:'18px', overflow:'hidden', marginBottom:'10px' }}>
+    <div style={{ background:'linear-gradient(135deg,#111827,#0d1422)', border:`1px solid ${cor}20`, borderRadius:'18px', overflow:'hidden', marginBottom:'10px', boxShadow:'0 2px 12px rgba(0,0,0,0.2)' }}>
+      {/* Header */}
       <button onClick={()=>setOpen(!open)} style={{ width:'100%', background:'none', border:'none', cursor:'pointer', padding:'14px 18px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
         <div style={{ display:'flex', alignItems:'center', gap:'10px', textAlign:'left' }}>
-          <div style={{ width:'38px', height:'38px', background:`${cor}18`, border:`1px solid ${cor}25`, borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'16px', flexShrink:0 }}>💵</div>
+          <div style={{ width:'38px', height:'38px', background:`${cor}18`, border:`1px solid ${cor}25`, borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'16px', flexShrink:0 }}>
+            {isSal ? '💼' : '💵'}
+          </div>
           <div>
-            <div style={{ display:'flex', gap:'6px', alignItems:'center' }}>
+            <div style={{ display:'flex', gap:'6px', alignItems:'center', flexWrap:'wrap' }}>
               <p style={{ fontSize:'14px', fontWeight:700, color:'#e2e8f0' }}>{renda.nome}</p>
               <span style={{ fontSize:'9px', background:`${cor}18`, color:cor, padding:'1px 6px', borderRadius:'4px', fontWeight:600 }}>{renda.categoria}</span>
             </div>
-            <p style={{ fontSize:'11px', color:'rgba(226,232,240,0.35)', marginTop:'2px' }}>{renda.descricao}</p>
+            {renda.descricao && <p style={{ fontSize:'11px', color:'rgba(226,232,240,0.35)', marginTop:'2px' }}>{renda.descricao}</p>}
           </div>
         </div>
         <div style={{ textAlign:'right', flexShrink:0 }}>
           <p style={{ fontSize:'15px', fontWeight:800, color:cor, fontFamily:"'JetBrains Mono',monospace" }}>{fmt(liquido)}</p>
-          {totalDesp>0 && <p style={{ fontSize:'10px', color:'#f87171' }}>−{fmt(totalDesp)}</p>}
+          {isSal && <p style={{ fontSize:'10px', color:'rgba(226,232,240,0.3)' }}>Bruto {fmt(totalBruto)}</p>}
+          {!isSal && totalDesp>0 && <p style={{ fontSize:'10px', color:'#f87171' }}>−{fmt(totalDesp)}</p>}
+          <p style={{ fontSize:'10px', color:'rgba(226,232,240,0.25)' }}>{open?'▲':'▼'}</p>
         </div>
       </button>
 
+      {/* Detalhe */}
       {open && (
         <div style={{ padding:'0 18px 16px', borderTop:'1px solid rgba(255,255,255,0.05)', animation:'scaleIn 0.2s ease both' }}>
-          {editing ? (
+          {isSal ? (
+            // Salário — campos editáveis inline
+            <SalarioDetalhe sal={sal} onUpdate={updateSalCampo} />
+          ) : editing ? (
+            // Edição simples
             <div style={{ display:'flex', flexDirection:'column', gap:'10px', paddingTop:'14px' }}>
               {[{label:'Nome',key:'nome',type:'text'},{label:'Valor Bruto (R$)',key:'valor',type:'number'},{label:'Descrição',key:'descricao',type:'text'}].map(f=>(
                 <div key={f.key}>
@@ -187,6 +179,7 @@ function OutraRendaSimples({ renda, onUpdate, onRemove, onAddDespesa, onRemoveDe
               </div>
             </div>
           ) : (
+            // Visualização simples
             <div style={{ paddingTop:'12px' }}>
               {(renda.despesas||[]).map(d=>(
                 <div key={d.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'6px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
@@ -218,43 +211,9 @@ function OutraRendaSimples({ renda, onUpdate, onRemove, onAddDespesa, onRemoveDe
               </div>
             </div>
           )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function OutraRendaSalario({ renda, onUpdate, onRemove }) {
-  const [open, setOpen] = useState(false)
-  const sal = renda.salario || {}
-  const { totalBruto, liquido } = calcSalario(sal)
-
-  const updateCampo = (campo, valor) => {
-    onUpdate(renda.id, { salario: { ...sal, [campo]: parseFloat(valor)||0 } })
-  }
-
-  return (
-    <div style={{ background:'linear-gradient(135deg,#111827,#0d1422)', border:'1px solid rgba(251,191,36,0.18)', borderRadius:'18px', overflow:'hidden', marginBottom:'10px' }}>
-      <button onClick={()=>setOpen(!open)} style={{ width:'100%', background:'none', border:'none', cursor:'pointer', padding:'14px 18px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:'10px', textAlign:'left' }}>
-          <div style={{ width:'38px', height:'38px', background:'rgba(251,191,36,0.15)', border:'1px solid rgba(251,191,36,0.25)', borderRadius:'10px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'16px', flexShrink:0 }}>💼</div>
-          <div>
-            <div style={{ display:'flex', gap:'6px', alignItems:'center' }}>
-              <p style={{ fontSize:'14px', fontWeight:700, color:'#e2e8f0' }}>{renda.nome}</p>
-              <span style={{ fontSize:'9px', background:'rgba(251,191,36,0.15)', color:'#fbbf24', padding:'1px 6px', borderRadius:'4px', fontWeight:600 }}>Salário</span>
-            </div>
-            <p style={{ fontSize:'11px', color:'rgba(226,232,240,0.35)', marginTop:'2px' }}>{renda.descricao}</p>
-          </div>
-        </div>
-        <div style={{ textAlign:'right', flexShrink:0 }}>
-          <p style={{ fontSize:'15px', fontWeight:800, color:'#fbbf24', fontFamily:"'JetBrains Mono',monospace" }}>{fmt(liquido)}</p>
-          <p style={{ fontSize:'10px', color:'rgba(226,232,240,0.3)' }}>Bruto {fmt(totalBruto)}</p>
-        </div>
-      </button>
-      {open && (
-        <div style={{ padding:'0 18px 16px', borderTop:'1px solid rgba(255,255,255,0.05)', animation:'scaleIn 0.2s ease both' }}>
-          <SalarioCard salario={sal} onUpdate={updateCampo} titulo={renda.nome} defaultOpen={true} />
-          <button onClick={()=>onRemove(renda.id)} style={{ width:'100%', background:'rgba(248,113,113,0.08)', border:'1px solid rgba(248,113,113,0.15)', borderRadius:'10px', padding:'9px', color:'#f87171', cursor:'pointer', fontSize:'12px', marginTop:'4px' }}>🗑️ Remover fonte</button>
+          {isSal && (
+            <button onClick={()=>onRemove(renda.id)} style={{ width:'100%', background:'rgba(248,113,113,0.07)', border:'1px solid rgba(248,113,113,0.15)', borderRadius:'10px', padding:'8px', color:'#f87171', cursor:'pointer', fontSize:'12px', marginTop:'12px' }}>🗑️ Remover</button>
+          )}
         </div>
       )}
     </div>
@@ -262,122 +221,111 @@ function OutraRendaSalario({ renda, onUpdate, onRemove }) {
 }
 
 export default function Proventos() {
-  const { salario, updateSalario, outrasRendas, addOutraRenda, updateOutraRenda, removeOutraRenda, addDespesaRenda, removeDespesaRenda } = useFinancasStore()
+  const { outrasRendas, addOutraRenda, updateOutraRenda, removeOutraRenda, addDespesaRenda, removeDespesaRenda } = useFinancasStore()
   const [showAdd, setShowAdd] = useState(false)
   const [novoTipo, setNovoTipo] = useState('simples')
-  const [nova, setNova] = useState({ nome:'', valor:'', descricao:'', recorrente:true, categoria:'Freelance' })
+  const [nova, setNova] = useState({ nome:'', valor:'', descricao:'', categoria:'Freelance' })
 
-  const { liquido: salLiq, totalBruto } = calcSalario(salario)
-
-  const outrasLiq = outrasRendas.reduce((a,r) => {
-    if (r.tipo==='salario') { const {liquido} = calcSalario(r.salario||{}); return a+liquido }
+  const totalLiq = outrasRendas.reduce((a,r) => {
+    if (r.tipo==='salario') { const {liquido}=calcSalario(r.salario||{}); return a+liquido }
     return a + r.valor - (r.despesas||[]).reduce((b,d)=>b+d.valor,0)
   }, 0)
 
-  const rendaTotal = salLiq + outrasLiq
-
   const addRenda = () => {
     if (!nova.nome) return
-    if (novoTipo === 'salario') {
-      addOutraRenda({ nome:nova.nome, tipo:'salario', descricao:nova.descricao, recorrente:true, categoria:'Salário', salario:{ salarioBasico:0, rmnr:0, anuenio:0, gratFuncaoGer:0, heDesembarque:0, auxilioEducacional:0, inss:0, ams:0 } })
+    if (novoTipo==='salario') {
+      addOutraRenda({ nome:nova.nome, tipo:'salario', descricao:nova.descricao, categoria:'Salário',
+        salario:{ salarioBasico:0, rmnr:0, anuenio:0, gratFuncaoGer:0, heDesembarque:0, auxilioEducacional:0, inss:0, ams:0 } })
     } else {
       if (!nova.valor) return
       addOutraRenda({ ...nova, tipo:'simples', valor:parseFloat(nova.valor) })
     }
-    setNova({ nome:'', valor:'', descricao:'', recorrente:true, categoria:'Freelance' })
+    setNova({ nome:'', valor:'', descricao:'', categoria:'Freelance' })
     setShowAdd(false)
   }
 
   return (
     <div style={{ padding:'0 0 8px' }}>
-      {/* Header compacto */}
+      {/* Header compacto com total */}
       <div style={{ background:'linear-gradient(160deg,#0d1526,#070b16)', padding:'48px 20px 20px', position:'relative', overflow:'hidden' }}>
         <div style={{ position:'absolute', top:'-40px', right:'-40px', width:'160px', height:'160px', background:'radial-gradient(circle,rgba(110,231,183,0.07) 0%,transparent 70%)', borderRadius:'50%' }} />
-        <h1 style={{ fontSize:'26px', fontWeight:800, letterSpacing:'-0.02em', animation:'fadeUp 0.5s ease both' }}>Proventos</h1>
-
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'10px', marginTop:'14px', animation:'fadeUp 0.5s ease 0.1s both' }}>
-          {[
-            { label:'Salário Líq.', value:salLiq, color:'#6ee7b7' },
-            { label:'Outras Rendas', value:outrasLiq, color:'#fbbf24' },
-            { label:'Total', value:rendaTotal, color:'#818cf8' },
-          ].map(s => (
-            <div key={s.label} style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:'12px', padding:'10px 8px', textAlign:'center' }}>
-              <p style={{ fontSize:'14px', fontWeight:800, color:s.color, fontFamily:"'JetBrains Mono',monospace" }}>{new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}).format(s.value)}</p>
-              <p style={{ fontSize:'10px', color:'rgba(226,232,240,0.35)', marginTop:'3px' }}>{s.label}</p>
-            </div>
-          ))}
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', animation:'fadeUp 0.5s ease both' }}>
+          <div>
+            <p style={{ fontSize:'11px', color:'rgba(226,232,240,0.4)', letterSpacing:'0.1em', textTransform:'uppercase' }}>Total Líquido</p>
+            <p style={{ fontSize:'30px', fontWeight:800, color:'#6ee7b7', fontFamily:"'JetBrains Mono',monospace", letterSpacing:'-0.02em', marginTop:'4px' }}>
+              {fmtK(totalLiq)}
+            </p>
+          </div>
+          <button onClick={()=>setShowAdd(!showAdd)} style={{ background:'rgba(110,231,183,0.1)', border:'1px solid rgba(110,231,183,0.2)', borderRadius:'12px', padding:'8px 14px', color:'#6ee7b7', fontSize:'13px', fontWeight:600, cursor:'pointer' }}>
+            + Adicionar
+          </button>
         </div>
       </div>
 
       <div style={{ padding:'16px' }}>
-        {/* Card salário principal */}
-        <div style={{ animation:'fadeUp 0.5s ease 0.15s both' }}>
-          <SalarioCard salario={salario} onUpdate={updateSalario} />
-        </div>
-
-        {/* Outras rendas */}
-        <div style={{ animation:'fadeUp 0.5s ease 0.2s both' }}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px' }}>
-            <p style={{ fontSize:'14px', fontWeight:600, color:'rgba(226,232,240,0.7)' }}>Outras Fontes</p>
-            <button onClick={()=>setShowAdd(!showAdd)} style={{ background:'rgba(110,231,183,0.1)', border:'1px solid rgba(110,231,183,0.2)', borderRadius:'10px', padding:'6px 12px', color:'#6ee7b7', fontSize:'12px', fontWeight:600, cursor:'pointer' }}>+ Adicionar</button>
+        {/* Form adicionar */}
+        {showAdd && (
+          <div style={{ background:'#111827', border:'1px solid rgba(110,231,183,0.2)', borderRadius:'16px', padding:'16px', marginBottom:'12px', animation:'scaleIn 0.2s ease both' }}>
+            <p style={{ fontSize:'13px', fontWeight:600, color:'#6ee7b7', marginBottom:'12px' }}>Nova Fonte de Renda</p>
+            <div style={{ display:'flex', background:'rgba(255,255,255,0.04)', borderRadius:'10px', padding:'3px', marginBottom:'12px' }}>
+              {[['simples','Renda Simples'],['salario','Formato Salário']].map(([k,l])=>(
+                <button key={k} onClick={()=>setNovoTipo(k)} style={{ flex:1, background:novoTipo===k?'rgba(255,255,255,0.1)':'none', border:'none', borderRadius:'8px', padding:'7px', color:novoTipo===k?'#e2e8f0':'rgba(226,232,240,0.4)', fontSize:'12px', fontWeight:novoTipo===k?600:400, cursor:'pointer' }}>{l}</button>
+              ))}
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+              <div>
+                <label style={{ fontSize:'11px', color:'rgba(226,232,240,0.45)', display:'block', marginBottom:'4px' }}>Nome</label>
+                <input value={nova.nome} onChange={e=>setNova({...nova,nome:e.target.value})}
+                  style={{ width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'8px', padding:'8px 12px', color:'#e2e8f0', fontSize:'13px' }} />
+              </div>
+              {novoTipo==='simples' && <>
+                <div>
+                  <label style={{ fontSize:'11px', color:'rgba(226,232,240,0.45)', display:'block', marginBottom:'4px' }}>Valor Mensal (R$)</label>
+                  <input type="number" value={nova.valor} onChange={e=>setNova({...nova,valor:e.target.value})}
+                    style={{ width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'8px', padding:'8px 12px', color:'#e2e8f0', fontSize:'13px' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize:'11px', color:'rgba(226,232,240,0.45)', display:'block', marginBottom:'4px' }}>Categoria</label>
+                  <select value={nova.categoria} onChange={e=>setNova({...nova,categoria:e.target.value})}
+                    style={{ width:'100%', background:'#1a2234', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'8px', padding:'8px 12px', color:'#e2e8f0', fontSize:'13px' }}>
+                    {['Aluguel','Investimentos','Freelance','Dividendos','Outros'].map(c=><option key={c}>{c}</option>)}
+                  </select>
+                </div>
+              </>}
+              <div>
+                <label style={{ fontSize:'11px', color:'rgba(226,232,240,0.45)', display:'block', marginBottom:'4px' }}>Descrição</label>
+                <input value={nova.descricao} onChange={e=>setNova({...nova,descricao:e.target.value})}
+                  style={{ width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'8px', padding:'8px 12px', color:'#e2e8f0', fontSize:'13px' }} />
+              </div>
+              {novoTipo==='salario' && <p style={{ fontSize:'11px', color:'rgba(226,232,240,0.3)', fontStyle:'italic' }}>Preencha os valores após adicionar, expandindo o card.</p>}
+              <div style={{ display:'flex', gap:'8px' }}>
+                <button onClick={addRenda} style={{ flex:1, background:'linear-gradient(135deg,#6ee7b7,#3b82f6)', border:'none', borderRadius:'10px', padding:'10px', color:'#070b16', fontWeight:700, cursor:'pointer', fontSize:'13px' }}>Adicionar</button>
+                <button onClick={()=>setShowAdd(false)} style={{ flex:1, background:'rgba(255,255,255,0.05)', border:'none', borderRadius:'10px', padding:'10px', color:'#e2e8f0', cursor:'pointer', fontSize:'13px' }}>Cancelar</button>
+              </div>
+            </div>
           </div>
+        )}
 
-          {showAdd && (
-            <div style={{ background:'#111827', border:'1px solid rgba(110,231,183,0.2)', borderRadius:'16px', padding:'16px', marginBottom:'12px', animation:'scaleIn 0.2s ease both' }}>
-              <p style={{ fontSize:'13px', fontWeight:600, color:'#6ee7b7', marginBottom:'12px' }}>Nova Fonte de Renda</p>
+        {/* Lista de rendas */}
+        {outrasRendas.length === 0 && (
+          <div style={{ textAlign:'center', padding:'48px 20px', color:'rgba(226,232,240,0.3)' }}>
+            <p style={{ fontSize:'32px', marginBottom:'12px' }}>💼</p>
+            <p style={{ fontSize:'14px', marginBottom:'6px' }}>Nenhuma fonte de renda cadastrada</p>
+            <p style={{ fontSize:'12px' }}>Clique em "+ Adicionar" para começar</p>
+          </div>
+        )}
 
-              {/* Tipo */}
-              <div style={{ display:'flex', background:'rgba(255,255,255,0.04)', borderRadius:'10px', padding:'3px', marginBottom:'12px' }}>
-                {[['simples','Renda Simples'],['salario','Formato Salário']].map(([k,l])=>(
-                  <button key={k} onClick={()=>setNovoTipo(k)} style={{ flex:1, background:novoTipo===k?'rgba(255,255,255,0.1)':'none', border:'none', borderRadius:'8px', padding:'7px', color:novoTipo===k?'#e2e8f0':'rgba(226,232,240,0.4)', fontSize:'12px', fontWeight:novoTipo===k?600:400, cursor:'pointer' }}>{l}</button>
-                ))}
-              </div>
-
-              <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
-                <div>
-                  <label style={{ fontSize:'11px', color:'rgba(226,232,240,0.45)', display:'block', marginBottom:'4px' }}>Nome</label>
-                  <input value={nova.nome} onChange={e=>setNova({...nova,nome:e.target.value})}
-                    style={{ width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'8px', padding:'8px 12px', color:'#e2e8f0', fontSize:'13px' }} />
-                </div>
-                {novoTipo==='simples' && (
-                  <>
-                    <div>
-                      <label style={{ fontSize:'11px', color:'rgba(226,232,240,0.45)', display:'block', marginBottom:'4px' }}>Valor Mensal (R$)</label>
-                      <input type="number" value={nova.valor} onChange={e=>setNova({...nova,valor:e.target.value})}
-                        style={{ width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'8px', padding:'8px 12px', color:'#e2e8f0', fontSize:'13px' }} />
-                    </div>
-                    <div>
-                      <label style={{ fontSize:'11px', color:'rgba(226,232,240,0.45)', display:'block', marginBottom:'4px' }}>Categoria</label>
-                      <select value={nova.categoria} onChange={e=>setNova({...nova,categoria:e.target.value})}
-                        style={{ width:'100%', background:'#1a2234', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'8px', padding:'8px 12px', color:'#e2e8f0', fontSize:'13px' }}>
-                        {['Aluguel','Investimentos','Freelance','Dividendos','Outros'].map(c=><option key={c}>{c}</option>)}
-                      </select>
-                    </div>
-                  </>
-                )}
-                <div>
-                  <label style={{ fontSize:'11px', color:'rgba(226,232,240,0.45)', display:'block', marginBottom:'4px' }}>Descrição</label>
-                  <input value={nova.descricao} onChange={e=>setNova({...nova,descricao:e.target.value})}
-                    style={{ width:'100%', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'8px', padding:'8px 12px', color:'#e2e8f0', fontSize:'13px' }} />
-                </div>
-                {novoTipo==='salario' && <p style={{ fontSize:'11px', color:'rgba(226,232,240,0.35)', fontStyle:'italic' }}>Os campos de verbas e descontos serão preenchidos após adicionar.</p>}
-                <div style={{ display:'flex', gap:'8px' }}>
-                  <button onClick={addRenda} style={{ flex:1, background:'linear-gradient(135deg,#6ee7b7,#3b82f6)', border:'none', borderRadius:'10px', padding:'10px', color:'#070b16', fontWeight:700, cursor:'pointer', fontSize:'13px' }}>Adicionar</button>
-                  <button onClick={()=>setShowAdd(false)} style={{ flex:1, background:'rgba(255,255,255,0.05)', border:'none', borderRadius:'10px', padding:'10px', color:'#e2e8f0', cursor:'pointer', fontSize:'13px' }}>Cancelar</button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {outrasRendas.map((r,i) => (
-            <div key={r.id} style={{ animation:`fadeUp 0.4s ease ${0.25+i*0.05}s both` }}>
-              {r.tipo==='salario'
-                ? <OutraRendaSalario renda={r} onUpdate={updateOutraRenda} onRemove={removeOutraRenda} />
-                : <OutraRendaSimples renda={r} onUpdate={updateOutraRenda} onRemove={removeOutraRenda} onAddDespesa={addDespesaRenda} onRemoveDespesa={removeDespesaRenda} />
-              }
-            </div>
-          ))}
-        </div>
+        {outrasRendas.map((r,i) => (
+          <div key={r.id} style={{ animation:`fadeUp 0.4s ease ${i*0.05}s both` }}>
+            <RendaCard
+              renda={r}
+              onUpdate={updateOutraRenda}
+              onRemove={removeOutraRenda}
+              onAddDespesa={addDespesaRenda}
+              onRemoveDespesa={removeDespesaRenda}
+            />
+          </div>
+        ))}
       </div>
     </div>
   )
